@@ -19,9 +19,9 @@ func (a *App) RegisterHandlers() {
 			return err
 		}
 		id := "5170233102089322756"
-		session := a.Storage.userIDGift[c.Sender().ID]
-		session.GiftID = id
-		session.MessageIdToDelete = cb.Message
+		session := a.Storage.getSession(c.Sender().ID)
+		a.Storage.setID(id, c.Sender().ID)
+		session.MessageIdToDelete = cb.Message // I've finished here
 		a.Storage.userState[c.Sender().ID] = "wait_description"
 		a.Storage.userIDGift[c.Sender().ID] = session
 		c.Edit("Вы выбрали 🧸 за 15⭐️\n Теперь напиши описание подарка", a.Markup.Cancle)
@@ -37,7 +37,7 @@ func (a *App) RegisterHandlers() {
 		if err := c.Respond(); err != nil {
 			return err
 		}
-		id := "5170233102089322756"
+		id := "5170145012310081615"
 		session := a.Storage.userIDGift[c.Sender().ID]
 		session.GiftID = id
 		session.MessageIdToDelete = cb.Message
@@ -48,8 +48,8 @@ func (a *App) RegisterHandlers() {
 	})
 
 	a.Bot.Handle("/start", func(c tele.Context) error {
-		return c.Send("Привет! Это бот для авторских подарков\nНапиши /gift чтобы отправить подарок", &tele.ReplyMarkup{RemoveKeyboard: true})
-	})
+		return c.Send("Привет! ", &tele.ReplyMarkup{RemoveKeyboard: true})
+	}) //Это бот для авторских подарков\nНапиши /gift чтобы отправить подарок
 
 	a.Bot.Handle("/gift", func(c tele.Context) error {
 		return c.Send("Привет, кому бы ты хотел оптравить подарок? ", a.Markup.KeyboardBuyGift)

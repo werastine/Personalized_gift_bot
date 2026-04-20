@@ -1,16 +1,13 @@
 package handlers
 
-import tele "gopkg.in/telebot.v4"
+import (
+	tele "gopkg.in/telebot.v4"
+)
 
 type App struct {
 	Bot     *tele.Bot
 	Storage *GlobalStorage
 	Markup  *MarkupSet
-}
-
-type GlobalStorage struct {
-	userIDGift map[int64]UserGiftToSend
-	userState  map[int64]string
 }
 
 type UserGiftToSend struct {
@@ -47,12 +44,4 @@ type MarkupSet struct {
 	BtnMyUser    *tele.Btn
 	BtnOtherUser *tele.Btn
 	//etc
-}
-
-func NewStorage() *GlobalStorage {
-	g := &GlobalStorage{
-		userIDGift: make(map[int64]UserGiftToSend),
-		userState:  make(map[int64]string),
-	}
-	return g
 }
