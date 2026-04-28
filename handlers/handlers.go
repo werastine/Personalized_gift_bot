@@ -30,25 +30,6 @@ func (a *App) RegisterHandlers() {
 		return nil
 	})
 
-	a.Bot.Handle(a.Markup.BtnHeart, func(c tele.Context) error {
-
-		cb := c.Callback()
-		if cb == nil || cb.Message == nil {
-			return c.Send("Не можем получить айди сообщения")
-		}
-		if err := c.Respond(); err != nil {
-			return err
-		}
-		id := "5170145012310081615"
-		session := a.Storage.userIDGift[c.Sender().ID]
-		session.GiftID = id
-		session.MessageIdToDelete = cb.Message
-		a.Storage.userState[c.Sender().ID] = "wait_description"
-		a.Storage.userIDGift[c.Sender().ID] = session
-		c.Edit("Вы выбрали 💝 за 15 stars\n Теперь напиши описание подарка", a.Markup.Cancle)
-		return nil
-	})
-
 	a.Bot.Handle("/start", func(c tele.Context) error {
 		return c.Send("Привет! ", &tele.ReplyMarkup{RemoveKeyboard: true})
 	}) //Это бот для авторских подарков\nНапиши /gift чтобы отправить подарок
@@ -63,18 +44,19 @@ func (a *App) RegisterHandlers() {
 			return c.Send("Something went wrong")
 		}
 		c.Delete()
-		session := a.Storage.userIDGift[c.Sender().ID]
+		session, _ := a.Storage.getSession(c.Sender().ID)
 		session.Ready = true
 		session.RecipientID = c.Sender().ID
-		a.Storage.userIDGift[c.Sender().ID] = session
+		a.Storage.setSession(c.Sender().ID, &session)
 		return c.Send("Выбери подарок для себя!", a.Markup.InlineMenu)
 	})
 
 	a.Bot.Handle(a.Markup.BtnCancale1, func(c tele.Context) error {
-		defer delete(a.Storage.userState, c.Sender().ID)
-		session := a.Storage.userIDGift[c.Sender().ID]
+		defer a.Storage.deleteStorage(c.Sender().ID)
+
+		session, _ := a.Storage.getSession(c.Sender().ID)
 		session.GiftDescription = ""
-		a.Storage.userIDGift[c.Sender().ID] = session
+		a.Storage.setSession(c.Sender().ID, &session)
 		errEdit := c.Edit("Переходим к оплате!", &tele.ReplyMarkup{})
 		if errEdit != nil {
 			log.Println("Error in editing message in BtnCancale1")
@@ -90,9 +72,9 @@ func (a *App) RegisterHandlers() {
 		if err := c.Respond(); err != nil {
 			return err
 		}
-		session := a.Storage.userIDGift[c.Sender().ID]
+		session, _ := a.Storage.getSession(c.Sender().ID)
 		session.Ready = true
-		a.Storage.userIDGift[c.Sender().ID] = session
+		a.Storage.setSession(c.Sender().ID, &session)
 		return c.Edit(fmt.Sprintf("Выбери подарок для %s", session.ReciepUserName), a.Markup.InlineMenu)
 	})
 
@@ -100,9 +82,9 @@ func (a *App) RegisterHandlers() {
 		if err := c.Respond(); err != nil {
 			return err
 		}
-		session := a.Storage.userIDGift[c.Sender().ID]
+		session, _ := a.Storage.getSession(c.Sender().ID)
 		session.Ready = false
-		a.Storage.userIDGift[c.Sender().ID] = session
+		a.Storage.setSession(c.Sender().ID, &session)
 		c.Edit("Хорошо, попробуем заново!", &tele.ReplyMarkup{})
 		return c.Send("Выбери получателя завово", a.Markup.KeyboardBuyGift)
 	})
@@ -127,10 +109,10 @@ func (a *App) RegisterHandlers() {
 		}
 		a.Bot.Delete(msg)
 
-		session := a.Storage.userIDGift[c.Sender().ID]
+		session, _ := a.Storage.getSession(c.Sender().ID)
 		session.RecipientID = user.UserID
 		session.ReciepUserName = user.Username
-		a.Storage.userIDGift[c.Sender().ID] = session
+		a.Storage.setSession(c.Sender().ID, &session)
 
 		return c.Send(fmt.Sprintf(
 			"Это правильный получатель?\nИмя: %s\nUsername: @%s\nID: %d",
@@ -151,7 +133,7 @@ func (a *App) RegisterHandlers() {
 
 	a.Bot.Handle(tele.OnPayment, func(c tele.Context) error {
 
-		session, ok := a.Storage.userIDGift[c.Sender().ID]
+		session, ok := a.Storage.getSession(c.Sender().ID)
 		if !ok {
 			return c.Send("Session is not found")
 		}
@@ -177,10 +159,10 @@ func (a *App) RegisterHandlers() {
 	a.Bot.Handle(tele.OnText, func(c tele.Context) error {
 		msg := c.Message()
 		if a.Storage.userState[c.Sender().ID] == "wait_description" {
-			defer delete(a.Storage.userState, c.Sender().ID)
-			session := a.Storage.userIDGift[c.Sender().ID]
-			session.GiftDescription = msg.Text // there i will set gift desc. as user's message
-			a.Storage.userIDGift[c.Sender().ID] = session
+			defer a.Storage.deleteStorage(c.Sender().ID)
+			session, _ := a.Storage.getSession(c.Sender().ID)
+			session.GiftDescription = msg.Text
+			a.Storage.setSession(c.Sender().ID, &session)
 			_, errEdit := a.Bot.Edit(session.MessageIdToDelete, "Принято!", &tele.ReplyMarkup{})
 			if errEdit != nil {
 				log.Println("Error in editing message in Ontext")
@@ -196,3 +178,7 @@ func (a *App) RegisterHandlers() {
 	})
 
 }
+
+//continue adding mutex
+//mutex ставишь там, где есть общие изменяемые данные
+// особенно если это map, slice, счетчики, кеши, сессии пользователей

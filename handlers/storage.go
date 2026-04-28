@@ -19,11 +19,20 @@ func NewStorage() *GlobalStorage {
 	return g
 }
 
-func (a *GlobalStorage) getSession(userID int64) UserGiftToSend {
+func (a *GlobalStorage) getSession(userID int64) (UserGiftToSend, bool) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	session := a.userIDGift[userID]
-	return session
+	session, ok := a.userIDGift[userID]
+	if !ok {
+		return session, false
+	}
+	return session, true
+}
+
+func (a *GlobalStorage) setSession(userID int64, session *UserGiftToSend) {
+	a.mu.Lock()
+	a.userIDGift[userID] = *session
+	a.mu.Unlock()
 }
 
 func (a *GlobalStorage) setID(giftID string, userID int64) {
@@ -59,4 +68,10 @@ func (a *GlobalStorage) getState(userID int64) string {
 	defer a.mu.RUnlock()
 
 	return a.userState[userID]
+}
+
+func (a *GlobalStorage) deleteStorage(userID int64) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	delete(a.userState, userID)
 }
