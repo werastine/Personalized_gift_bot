@@ -22,7 +22,7 @@ func (a *App) RegisterHandlers() {
 		session := a.Storage.getSession(c.Sender().ID)
 		a.Storage.setID(id, c.Sender().ID)
 		session.MessageIdToDelete = cb.Message // I've finished here
-		a.Storage.userState[c.Sender().ID] = "wait_description"
+		a.Storage.setState(c.Sender().ID, "wait_description")
 		a.Storage.userIDGift[c.Sender().ID] = session
 		c.Edit("Вы выбрали 🧸 за 15⭐️\n Теперь напиши описание подарка", a.Markup.Cancle)
 		return nil
