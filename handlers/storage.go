@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	tele "gopkg.in/telebot.v4"
 	"sync"
 )
 
@@ -30,6 +31,15 @@ func (a *GlobalStorage) setID(giftID string, userID int64) {
 	defer a.mu.Unlock()
 	session := a.userIDGift[userID]
 	session.GiftID = giftID
+	a.userIDGift[userID] = session
+}
+
+func (a *GlobalStorage) DeleteMessage(userID int64, message *tele.Message) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	session := a.userIDGift[userID]
+	session.MessageIdToDelete = message
 	a.userIDGift[userID] = session
 }
 

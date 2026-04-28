@@ -19,12 +19,14 @@ func (a *App) RegisterHandlers() {
 			return err
 		}
 		id := "5170233102089322756"
-		session := a.Storage.getSession(c.Sender().ID)
+		a.Storage.getSession(c.Sender().ID)
 		a.Storage.setID(id, c.Sender().ID)
-		session.MessageIdToDelete = cb.Message // I've finished here
+		a.Storage.DeleteMessage(c.Sender().ID, cb.Message)
 		a.Storage.setState(c.Sender().ID, "wait_description")
-		a.Storage.userIDGift[c.Sender().ID] = session
-		c.Edit("Вы выбрали 🧸 за 15⭐️\n Теперь напиши описание подарка", a.Markup.Cancle)
+		err := c.Edit("Вы выбрали 🧸 за 15⭐️\n Теперь напиши описание подарка", a.Markup.Cancle)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 
